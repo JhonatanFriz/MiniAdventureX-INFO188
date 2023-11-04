@@ -2,23 +2,66 @@
 import System.Environment
 import System.Random
 import System.IO
+import Data.List
 import Data.Typeable
 
 -- funcion que crea una lista de listas, donde cada caracter de es un espacio en blanco
-createTab :: Int -> [[Char]]
-createTab n = replicate n (replicate n ' ')
+createTab :: Int -> [String]
+createTab n = replicate n (replicate n 'a')
+
+advanceSeed :: StdGen -> StdGen
+advanceSeed = snd . split
 
 -- formarTablero :: [[Char]] -> [[Char]]
+-- for each space in tablero do
+-- if char == ' ' then
+--    random1 para ver si forma obstaculo, if true then
+--      random2 para ver si es L o $
 
--- ubicarJugador :: (Int, Int) -> [[Char]] -> [[Char]]
--- for i in filas 
--- for j in columnas
--- if (i,j)=(x,y) then @
+--crearMurallas :: [[Char]] -> [[Char]]
+--crearMurallas t = do
+    --let number = randomRIO (0,5)
+    -- for i=1, i<=number do
+    --  let length = randomRIO (3,6)
+    --  let xy = randomRIO (0,1) -- 0 horizontal, 1 vertical
 
--- ubicarTesoro :: (Int, Int) -> [[Char]] -> [[Char]]
--- for i in filas 
--- for j in columnas
--- if (i,j)=(x,y) then X
+-- Crear muralla (solo una)
+elemento :: [String] -> Int -> Int -> Int -> Bool -> Char
+elemento tablero x y l o = (tablero !! x) !! y
+-- if (tablero !! x) !! y == 'a'
+    -- reemplazar x y por 'L'
+    -- elemento tablero x y+1 l-1 o ¿algo así?
+
+--  crearMuralla :: [String] -> (Int, Int) -> Int -> Bool -> [String]
+--  recorrer tablero hasta encontrar la coordenada
+--      if Bool == 0 then
+--          [Horizontal] reemplazar caracteres con 'L' hasta agotar el contador (Int) o encontrar '@' o 'X' o 'L' ¿o '$'?
+--      else
+--          [Vertical] reemplazar caracteres con 'L' hasta agotar el contador (Int) o encontrar '@' o 'X' o 'L' ¿o '$'?
+
+
+replaceStringAtIndex :: Int -> Int -> Char -> [String] -> [String]
+replaceStringAtIndex _ _ _ [] = []  -- Handling the case of an empty list
+replaceStringAtIndex index index2 newChar list
+  | index < 0 || index >= length list = list  -- Handling cases where index is out of bounds
+  | otherwise =
+    let (before, stringAtIndex : after) = splitAt index list
+    in
+      case replaceCharAtIndex index2 newChar stringAtIndex of
+        Nothing -> list  -- Do not replace if index2 is out of bounds in the stringAtIndex
+        Just modifiedString -> before ++ modifiedString : after
+
+replaceCharAtIndex :: Int -> Char -> String -> Maybe String
+replaceCharAtIndex index newChar str
+  | index < 0 || index >= length str = Nothing  -- Handling cases where index is out of bounds
+  | otherwise = Just $ take index str ++ [newChar] ++ drop (index + 1) str
+
+
+ubicarJugador :: (Int, Int) -> [String] -> [String]
+ubicarJugador (x, y) t = replaceStringAtIndex x y '@' t
+
+ubicarTesoro :: (Int, Int) -> [String] -> [String]
+ubicarTesoro (x, y) t = replaceStringAtIndex x y 'X' t
 
 randomCoordinate :: Int -> IO (Int, Int)
 randomCoordinate n = do
@@ -46,20 +89,26 @@ main = do
         movement
         let coordinatePlayer = randomCoordinateWithSeedAndLimit n s
         
-        let coordinateTreasure = (n-1,n-1) -- randomCoordinateWithSeedAndLimit n s
+        let coordinateTreasure = randomCoordinateWithSeedAndLimit n (s+1)
         -- let coordinateTreasure = whileCoordinatesDiffer coordinatePlayer coordinateTreasure n s
-        -- let positionsList = [(coordinatePlayer, coordinateTreasure)]
+
         putStrLn $ "Coordenada Jugador: " ++ show coordinatePlayer
         putStrLn $ "Coordenada Tesoro: " ++ show coordinateTreasure
-        -- showTup coordinateString
-        -- let player = setPlayer s
 
+        -- tableroIO <- convertToIOList tablero
+        let tablero1 = ubicarJugador coordinatePlayer tablero
+        let tablero2 = ubicarTesoro coordinateTreasure tablero1
 
--- instance Show ((Int, Int), String) where
---    show ((x, y), str) = "(" ++ show x ++ ", " ++ show y ++ ")"
+        showMatrix tablero2
 
-showTup :: (Show a, Show b) => (a,b) -> String
-showTup (a,b) = (show a) ++ "," ++ (show b)
+        -- Creación de murallas
+        let x = 4
+        let y = 7
+        let l = 5
+        let o = True
+        let char = elemento tablero2 x y l o
+        putStrLn ("Carácter en posición (" ++ show x ++ "," ++ show y ++ "): " ++ [char])
+        putStrLn ("Largo: " ++ show l ++ ", orientación: " ++ show o)
 
 -- funciones para probar inputs de usuario
 movement :: IO ()
@@ -79,11 +128,6 @@ checkInput n
     | n == "R" = "El mapa ha sido regenerado."
     | otherwise = "Use W, A, S, D o R."
 
--- setPlayer :: Int -> [Int]
--- setPlayer s = do
-    -- Generar x entre 0 y n-1
-    -- Generar y entre 0 y n-1
-    
 randomCoordinateWithSeedAndLimit :: Int -> Int -> (Int, Int)
 randomCoordinateWithSeedAndLimit n s = let
     gen = mkStdGen s
@@ -92,11 +136,6 @@ randomCoordinateWithSeedAndLimit n s = let
     (x, gen') = randomR (0, m) newGen
     (y, gen'') = randomR (0, m) gen'
     in (x, y)
-
--- printMatrix :: [[a]] -> IO ()
--- printMatrix matrix = mapM_ (\row -> do
---   mapM_ (\element -> putStr (show element ++ " ")) row
---  putStrLn "") matrix
 
 whileCoordinatesDiffer :: (Int, Int) -> (Int, Int) -> Int -> Int -> (Int, Int)
 whileCoordinatesDiffer coord1 coord2 n s =
