@@ -1,5 +1,5 @@
 # MiniAdventureX-INFO188
-Integrantes:
+Integrantes:  
     - Jhonatan Friz  
     - Miguel Ormeño  
     - Rodolfo Seguel  
