@@ -7,7 +7,7 @@ import Data.Typeable
 
 -- funcion que crea una lista de listas, donde cada caracter de es un espacio en blanco
 createTab :: Int -> [String]
-createTab n = replicate n (replicate n 'a')
+createTab n = replicate n (replicate n ' ')
 
 advanceSeed :: StdGen -> StdGen
 advanceSeed = snd . split
@@ -26,11 +26,25 @@ advanceSeed = snd . split
     --  let xy = randomRIO (0,1) -- 0 horizontal, 1 vertical
 
 -- Crear muralla (solo una)
-elemento :: [String] -> Int -> Int -> Int -> Bool -> Char
-elemento tablero x y l o = (tablero !! x) !! y
+--elemento :: [String] -> Int -> Int -> Int -> Bool -> Char
+--elemento tablero x y l o = (tablero !! x) !! y
+
+showXY :: Int -> Int -> IO ()
+showXY x y = putStrLn ("x: " ++ show x ++ ", y: " ++ show y)
+
+elemento :: [String] -> Int -> Int -> Int -> Int -> Bool -> [String]
+elemento tablero x y n l isVertical =
+    if l > 0 && x < n && y < n && (tablero !! x) !! y == ' '
+        then do
+            let tablero' = replaceStringAtIndex x y 'L' tablero
+            if isVertical
+            then elemento tablero' (x+1) y n (l-1) isVertical
+            else elemento tablero' x (y+1) n (l-1) isVertical
+    else tablero
+    
 -- if (tablero !! x) !! y == 'a'
     -- reemplazar x y por 'L'
-    -- elemento tablero x y+1 l-1 o ¿algo así?
+    -- elemento tablero x (y+1) (l-1) o --¿algo así?
 
 --  crearMuralla :: [String] -> (Int, Int) -> Int -> Bool -> [String]
 --  recorrer tablero hasta encontrar la coordenada
@@ -54,6 +68,7 @@ replaceStringAtIndex index index2 newChar list
 replaceCharAtIndex :: Int -> Char -> String -> Maybe String
 replaceCharAtIndex index newChar str
   | index < 0 || index >= length str = Nothing  -- Handling cases where index is out of bounds
+--  | index == (length str - 1) = Just $ take index str ++ [newChar]
   | otherwise = Just $ take index str ++ [newChar] ++ drop (index + 1) str
 
 
@@ -69,7 +84,6 @@ randomCoordinate n = do
     x <- randomRIO (0, m)
     y <- randomRIO (0, m)
     return (x, y)
-
 
 showMatrix :: [[Char]] -> IO ()
 showMatrix matrix = do
@@ -98,17 +112,25 @@ main = do
         -- tableroIO <- convertToIOList tablero
         let tablero1 = ubicarJugador coordinatePlayer tablero
         let tablero2 = ubicarTesoro coordinateTreasure tablero1
-
-        showMatrix tablero2
+        -- fila x columna
+        --showMatrix tablero2
 
         -- Creación de murallas
-        let x = 4
-        let y = 7
-        let l = 5
-        let o = True
-        let char = elemento tablero2 x y l o
-        putStrLn ("Carácter en posición (" ++ show x ++ "," ++ show y ++ "): " ++ [char])
-        putStrLn ("Largo: " ++ show l ++ ", orientación: " ++ show o)
+        --let x = 0
+        --let y = 6
+        --let (x, y) = randomCoordinateWithSeedAndLimit n (s+2)
+        --let l = randomLength n (s+3)
+        --let o = randomOrientation (s+4)
+        --check x y l o
+        
+        --let tablero3 = elemento tablero2 x y n l o
+
+        let limit = randomLimit n s
+        let tablero3 = createWalls tablero2 n s limit
+        showMatrix tablero3
+        putStrLn "Tablero con lava:"
+        let tablero4 = createLavaPool tablero3 5 7 n (s+50) 7
+        showMatrix tablero4
 
 -- funciones para probar inputs de usuario
 movement :: IO ()
@@ -137,6 +159,21 @@ randomCoordinateWithSeedAndLimit n s = let
     (y, gen'') = randomR (0, m) gen'
     in (x, y)
 
+randomLength :: Int -> Int -> Int
+randomLength n s =
+    let (l, _) = randomR (2,n-1) (mkStdGen s)
+    in l
+
+randomOrientation :: Int -> Bool
+randomOrientation s =
+    let (o, _) = randomR (0,1) (mkStdGen s)
+    in (o == (1 :: Int))
+
+randomLimit :: Int -> Int -> Int
+randomLimit n s =
+    let (limit, _) = randomR (3,n-3) (mkStdGen s)
+    in limit
+
 whileCoordinatesDiffer :: (Int, Int) -> (Int, Int) -> Int -> Int -> (Int, Int)
 whileCoordinatesDiffer coord1 coord2 n s =
     if coord1 /= coord2
@@ -144,3 +181,45 @@ whileCoordinatesDiffer coord1 coord2 n s =
         else do
             let coord3 = randomCoordinateWithSeedAndLimit n s
             whileCoordinatesDiffer coord1 coord3 n s
+
+check :: Int -> Int -> Int -> Bool -> IO ()
+check x y l o =
+    putStrLn ("Muralla: (" ++ show x ++ "," ++ show y ++ "). Largo: " ++ show l ++ ". Orientación: " ++ show o)
+
+createWall :: [String] -> Int -> Int -> [String]
+createWall board n s = let
+    (x, y) = randomCoordinateWithSeedAndLimit n (s+2)
+    l = randomLength n (s+3)
+    o = randomOrientation (s+4)
+    --check x y l o    
+    in elemento board x y n l o
+
+createWalls :: [String] -> Int -> Int -> Int -> [String]
+createWalls board n s limit =
+    if limit > 0
+        then do
+            let board' = createWall board n s
+            createWalls board' n (s+30) (limit-1)
+        else board
+
+createLavaPool :: [String] -> Int -> Int -> Int -> Int -> Int -> [String]
+createLavaPool board x y n s limit =
+    if limit > 0
+        then do
+            let board' = createLavaRow board x y n s
+            createLavaPool board' x (y+1) n (s+80) (limit-1)
+        else board
+
+createLavaRow :: [String] -> Int -> Int -> Int -> Int -> [String]
+createLavaRow board x y n s = let
+    --(x, y) = randomCoordinateWithSeedAndLimit n (s+2)
+    l = randomLength n (s+3)
+    in generateLava board x y n l
+
+generateLava :: [String] -> Int -> Int -> Int -> Int -> [String]
+generateLava board x y n l =
+    if l > 0 && x < n && y < n && (board !! x) !! y == ' '
+        then do
+            let board' = replaceStringAtIndex x y '$' board
+            generateLava board' x (y+1) n (l-1)
+    else board
