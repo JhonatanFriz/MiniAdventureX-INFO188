@@ -1,9 +1,13 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Eta reduce" #-}
 import System.Environment
 import System.Random
 import System.IO
 import Data.List
 import Data.Typeable
+import GHC.Unit.Home.ModInfo (listHMIToHpt)
+import Data.Array.Base (bOOL_BIT)
 
 -- funcion que crea una lista de listas, donde cada caracter de es un espacio en blanco
 createTab :: Int -> [String]
@@ -89,18 +93,33 @@ showMatrix :: [[Char]] -> IO ()
 showMatrix matrix = do
     mapM_ (putStrLn . concatMap (\cell -> "[" ++ [cell]++ "]")) matrix
 
+printBoard :: [String] -> IO ()
+printBoard board = do
+    --let n = length board
+    --putStrLn ("a " ++ concat ["b " | r <- [0..n]] ++ "c")
+    mapM_ (putStrLn . concatMap (: " ")) board
+    --mapM_ (putStrLn . (\x -> "a" ++ x ++ "c")) board
+    --mapM_ (putStrLn . (\z -> "a" ++ (putStrLn . unwords . map (\x -> x ++ " ")))) board
+    --putStrLn ("a " ++ concat ["b " | r <- [0..n]] ++ "c")
+
+-- imprimirMatrizConAB :: [String] -> IO ()
+-- imprimirMatrizConAB [] = return ()
+-- imprimirMatrizConAB (fila:filas) = do
+--   putStrLn ("a" ++ unwords (map (++ " ") (words fila)) ++ "b")
+--   imprimirMatrizConAB filas
+
 main :: IO ()
 main = do
     args <- getArgs
     if length args /= 2
         then putStrLn "Uso: ./max <n> <s>"
     else do
-        let n = read (args !! 0) :: Int
+        let n = read (head args) :: Int
             s = read (args !! 1) :: Int
         putStrLn ("n = " ++ show n ++ ", s = " ++ show s)
         let tablero = createTab n
-        showMatrix tablero
-        movement
+        --showMatrix tablero
+        --movement
         let coordinatePlayer = randomCoordinateWithSeedAndLimit n s
         
         let coordinateTreasure = randomCoordinateWithSeedAndLimit n (s+1)
@@ -126,11 +145,48 @@ main = do
         --let tablero3 = elemento tablero2 x y n l o
 
         let limit = randomLimit n s
-        let tablero3 = createWalls tablero2 n s limit
-        showMatrix tablero3
+        --let tablero3 = createWalls tablero2 n s limit
+        --showMatrix tablero3
+        --putStrLn "Tablero con lava:"
+        --let tablero4 = createLavaPool tablero3 5 7 n (s+50) 7
+        --showMatrix tablero4
         putStrLn "Tablero con lava:"
-        let tablero4 = createLavaPool tablero3 5 7 n (s+50) 7
+        -- let (x, y1) = randomCoordinateWithSeedAndLimit n (s+99)
+        -- let il = randomInitialLava (s+21)
+        -- let y2 = y1 + il
+        -- let ll = il*2
+        -- showXY x y1
+        -- let tablero3 = createLavaPool tablero2 x y1 y2 n (s+50) ll
+        let tablero3 = createLavaPools tablero2 n (s+32) 5
+        showMatrix tablero3
+        putStrLn "Tablero con lava y murallas:"
+        let tablero4 = createWalls tablero3 n s limit
         showMatrix tablero4
+
+        --printBoard tablero4
+
+        game tablero4 coordinatePlayer coordinateTreasure
+
+game :: [String] -> (Int, Int) -> (Int, Int) -> IO ()
+game board p t = do
+    putStrLn "Ingrese una acción de movimiento (entre comillas):"
+    input <- getLine
+    let mov = read input :: String
+    putStrLn $ "Su movimiento es: " ++ show mov
+    putStrLn $ "Lo que paso es: " ++ checkInput mov
+    let p' = move p mov
+    let board' = replaceStringAtIndex (fst p) (snd p) ' ' board
+    let board'' = replaceStringAtIndex (fst p') (snd p') '@' board'
+    showMatrix board''
+    game board'' p' t
+
+move :: (Int, Int) -> String -> (Int, Int)
+move p mov
+    | mov == "W" = (fst p - 1, snd p)
+    | mov == "A" = (fst p, snd p - 1)
+    | mov == "S" = (fst p + 1, snd p)
+    | mov == "D" = (fst p, snd p + 1)
+    | otherwise = p
 
 -- funciones para probar inputs de usuario
 movement :: IO ()
@@ -162,6 +218,21 @@ randomCoordinateWithSeedAndLimit n s = let
 randomLength :: Int -> Int -> Int
 randomLength n s =
     let (l, _) = randomR (2,n-1) (mkStdGen s)
+    in l
+
+randomLavaLength :: Int -> Int -> Int
+randomLavaLength n s =
+    let (l, _) = randomR (2,7) (mkStdGen s)
+    in l
+
+randomLava :: Int -> Int
+randomLava s =
+    let (l, _) = randomR (-1,1) (mkStdGen s)
+    in l
+
+randomInitialLava :: Int -> Int
+randomInitialLava s =
+    let (l, _) = randomR (2,4) (mkStdGen s)
     in l
 
 randomOrientation :: Int -> Bool
@@ -202,24 +273,52 @@ createWalls board n s limit =
             createWalls board' n (s+30) (limit-1)
         else board
 
-createLavaPool :: [String] -> Int -> Int -> Int -> Int -> Int -> [String]
-createLavaPool board x y n s limit =
+-- createLavaPool :: [String] -> Int -> Int -> Int -> Int -> Int -> [String]
+-- createLavaPool board x y n s limit =
+--     if limit > 0
+--         then do
+--             let board' = createLavaRow board x y n s
+--             createLavaPool board' (x+1) y n (s+80) (limit-1)
+--         else board
+
+createLavaPools :: [String] -> Int -> Int -> Int -> [String]
+createLavaPools board n s limit =
     if limit > 0
         then do
-            let board' = createLavaRow board x y n s
-            createLavaPool board' x (y+1) n (s+80) (limit-1)
+            let (x, y1) = randomCoordinateWithSeedAndLimit n (s+99)
+            let il = randomInitialLava (s+21)
+            let y2 = y1 + il
+            let ll = il*2
+            let board' = createLavaPool board x y1 y2 n (s+50) ll
+            createLavaPools board' n (s+13) (limit-1)
         else board
 
-createLavaRow :: [String] -> Int -> Int -> Int -> Int -> [String]
-createLavaRow board x y n s = let
+createLavaPool :: [String] -> Int -> Int -> Int -> Int -> Int -> Int -> [String]
+createLavaPool board x y1 y2 n s limit =
+    if limit > 0 && y1 <= y2
+        then do
+            let y1' = y1 + randomLava (s+11)
+            let y2' = y2 + randomLava (s+12)
+            let board' = createLavaRow board x y1 y2 n s
+            createLavaPool board' (x+1) y1' y2' n (s+80) (limit-1)
+        else board
+
+createLavaRow :: [String] -> Int -> Int -> Int -> Int -> Int -> [String]
+createLavaRow board x y1 y2 n s = let
     --(x, y) = randomCoordinateWithSeedAndLimit n (s+2)
-    l = randomLength n (s+3)
-    in generateLava board x y n l
+    l = randomLavaLength n (s+3)
+    in generateLava board x y1 y2 n
+
+-- createLavaRow :: [String] -> Int -> Int -> Int -> Int -> [String]
+-- createLavaRow board x y n s = let
+--     --(x, y) = randomCoordinateWithSeedAndLimit n (s+2)
+--     l = randomLavaLength n (s+3)
+--     in generateLava board x y n l
 
 generateLava :: [String] -> Int -> Int -> Int -> Int -> [String]
-generateLava board x y n l =
-    if l > 0 && x < n && y < n && (board !! x) !! y == ' '
+generateLava board x y1 y2 n =
+    if x < n && y1 < n && y1 <= y2 && (board !! x) !! y1 == ' '
         then do
-            let board' = replaceStringAtIndex x y '$' board
-            generateLava board' x (y+1) n (l-1)
+            let board' = replaceStringAtIndex x y1 '$' board
+            generateLava board' x (y1+1) y2 n
     else board
