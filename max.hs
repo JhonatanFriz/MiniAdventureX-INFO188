@@ -172,8 +172,6 @@ main = do
 
         --printBoard tablero4
 
-        printBoard tablero4
-
         game tablero4 coordinatePlayer coordinateTreasure
 
 game :: [String] -> (Int, Int) -> (Int, Int) -> IO ()
@@ -183,14 +181,28 @@ game board p t = do
     let mov = read input :: String
     putStrLn $ "Su movimiento es: " ++ show mov
     putStrLn $ "Lo que paso es: " ++ checkInput mov
-    let p' = move p mov
-    let board' = replaceStringAtIndex (fst p) (snd p) ' ' board
-    let board'' = replaceStringAtIndex (fst p') (snd p') '@' board'
-    showMatrix board''
-    game board'' p' t
+    let p' = move board p mov
+    let cell = (board !! fst p') !! snd p'
+    putStrLn ("cell: " ++ show cell)
+    if cell == ' ' || cell == '$' || cell == 'X'
+        then do
+            let board' = replaceStringAtIndex (fst p) (snd p) ' ' board
+            let board'' = replaceStringAtIndex (fst p') (snd p') '@' board'
+            showMatrix board''
+            if cell == ' '
+                then do
+                    game board'' p' t
+                else if cell == '$'
+                    then do
+                        putStrLn "Game Over"
+                    else do
+                        putStrLn "Wiii"
+        else do
+            showMatrix board
+            game board p t
 
-move :: (Int, Int) -> String -> (Int, Int)
-move p mov
+move :: [String] -> (Int, Int) -> String -> (Int, Int)
+move board p mov
     | mov == "W" = (fst p - 1, snd p)
     | mov == "A" = (fst p, snd p - 1)
     | mov == "S" = (fst p + 1, snd p)
