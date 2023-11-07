@@ -93,11 +93,11 @@ showMatrix :: [[Char]] -> IO ()
 showMatrix matrix = do
     mapM_ (putStrLn . concatMap (\cell -> "[" ++ [cell]++ "]")) matrix
 
-printBoard :: [String] -> IO ()
-printBoard board = do
+-- printBoard :: [String] -> IO ()
+-- printBoard board = do
     --let n = length board
     --putStrLn ("a " ++ concat ["b " | r <- [0..n]] ++ "c")
-    mapM_ (putStrLn . concatMap (: " ")) board
+    --mapM_ (putStrLn . concatMap (: " ")) board
     --mapM_ (putStrLn . (\x -> "a" ++ x ++ "c")) board
     --mapM_ (putStrLn . (\z -> "a" ++ (putStrLn . unwords . map (\x -> x ++ " ")))) board
     --putStrLn ("a " ++ concat ["b " | r <- [0..n]] ++ "c")
@@ -107,6 +107,13 @@ printBoard board = do
 -- imprimirMatrizConAB (fila:filas) = do
 --   putStrLn ("a" ++ unwords (map (++ " ") (words fila)) ++ "b")
 --   imprimirMatrizConAB filas
+
+printBoard :: [String] -> IO ()
+printBoard board = do
+  let width = length board
+  putStrLn ("╔" ++ replicate (width*2+1) '═'  ++ "╗")
+  mapM_ (\s -> putStrLn $ "║ " ++ unwords (map return s) ++ replicate (width - length s - 4) ' ' ++ " ║") board
+  putStrLn ("╚" ++ replicate (width*2+1) '═'  ++ "╝")
 
 main :: IO ()
 main = do
@@ -164,6 +171,8 @@ main = do
         showMatrix tablero4
 
         --printBoard tablero4
+
+        printBoard tablero4
 
         game tablero4 coordinatePlayer coordinateTreasure
 
