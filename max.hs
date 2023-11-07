@@ -183,31 +183,37 @@ game board s p t = do
     let mov = head input
     putStrLn $ "Su movimiento es: " ++ show mov
     putStrLn $ "Lo que paso es: " ++ checkInput mov
+    let n = length board
     if mov == 'R'
         then do
-            let newBoard = generateBoard (length board) (s+253) p t
+            let newBoard = generateBoard n (s+253) p t
             showMatrix newBoard
             game newBoard (s+65) p t
         else do
         let p' = move board p mov
-        let cell = (board !! fst p') !! snd p'
-        putStrLn ("cell: " ++ show cell)
-        if cell == ' ' || cell == '$' || cell == 'X'
+        if fst p' < n && snd p' < n && fst p' >= 0 && snd p' >= 0
             then do
-                let board' = replaceStringAtIndex (fst p) (snd p) ' ' board
-                let board'' = replaceStringAtIndex (fst p') (snd p') '@' board'
-                showMatrix board''
-                if cell == ' '
-                    then do
-                        game board'' (s+66) p' t
-                    else if cell == '$'
+            let cell = (board !! fst p') !! snd p'
+            putStrLn ("cell: " ++ show cell)
+            if cell == ' ' || cell == '$' || cell == 'X'
+                then do
+                    let board' = replaceStringAtIndex (fst p) (snd p) ' ' board
+                    let board'' = replaceStringAtIndex (fst p') (snd p') '@' board'
+                    showMatrix board''
+                    if cell == ' '
                         then do
-                            putStrLn "Game Over"
-                        else do
-                            putStrLn "Wiii"
+                            game board'' (s+66) p' t
+                        else if cell == '$'
+                            then do
+                                putStrLn "Game Over"
+                            else do
+                                putStrLn "Wiii"
+                else do
+                    showMatrix board
+                    game board (s+47) p t
             else do
                 showMatrix board
-                game board (s+47) p t
+                game board (s+52) p t
 
 move :: [String] -> (Int, Int) -> Char -> (Int, Int)
 move board p mov
