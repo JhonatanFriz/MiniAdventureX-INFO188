@@ -177,8 +177,10 @@ main = do
 game :: [String] -> (Int, Int) -> (Int, Int) -> IO ()
 game board p t = do
     putStrLn "Ingrese una acción de movimiento (entre comillas):"
+    hFlush stdout
     input <- getLine
-    let mov = read input :: String
+    --let ip = read input :: String
+    let mov = head input
     putStrLn $ "Su movimiento es: " ++ show mov
     putStrLn $ "Lo que paso es: " ++ checkInput mov
     let p' = move board p mov
@@ -201,12 +203,12 @@ game board p t = do
             showMatrix board
             game board p t
 
-move :: [String] -> (Int, Int) -> String -> (Int, Int)
+move :: [String] -> (Int, Int) -> Char -> (Int, Int)
 move board p mov
-    | mov == "W" = (fst p - 1, snd p)
-    | mov == "A" = (fst p, snd p - 1)
-    | mov == "S" = (fst p + 1, snd p)
-    | mov == "D" = (fst p, snd p + 1)
+    | mov == 'W' = (fst p - 1, snd p)
+    | mov == 'A' = (fst p, snd p - 1)
+    | mov == 'S' = (fst p + 1, snd p)
+    | mov == 'D' = (fst p, snd p + 1)
     | otherwise = p
 
 -- funciones para probar inputs de usuario
@@ -216,15 +218,15 @@ movement = do
     input <- getLine
     let mov = read input :: String
     putStrLn $ "Su movimiento es: " ++ show mov
-    putStrLn $ "Lo que paso es: " ++ checkInput mov
+    --putStrLn $ "Lo que paso es: " ++ checkInput mov
 
-checkInput :: String -> String
+checkInput :: Char -> String
 checkInput n
-    | n == "W" = "Movido hacia arriba." --(x,y-1)
-    | n == "A" = "Movido hacia la izquierda." --(x-1,y)
-    | n == "S" = "Movido hacia abajo." --(x,y+1)
-    | n == "D" = "Movido hacia la derecha." --(x+1,y)
-    | n == "R" = "El mapa ha sido regenerado."
+    | n == 'W' = "Movido hacia arriba." --(x,y-1)
+    | n == 'A' = "Movido hacia la izquierda." --(x-1,y)
+    | n == 'S' = "Movido hacia abajo." --(x,y+1)
+    | n == 'D' = "Movido hacia la derecha." --(x+1,y)
+    | n == 'R' = "El mapa ha sido regenerado."
     | otherwise = "Use W, A, S, D o R."
 
 randomCoordinateWithSeedAndLimit :: Int -> Int -> (Int, Int)
