@@ -176,7 +176,7 @@ main = do
 
 game :: [String] -> (Int, Int) -> (Int, Int) -> IO ()
 game board p t = do
-    putStrLn "Ingrese una acción de movimiento (entre comillas):"
+    putStrLn "Ingrese una acción de movimiento:"
     hFlush stdout
     input <- getLine
     --let ip = read input :: String
@@ -214,7 +214,7 @@ move board p mov
 -- funciones para probar inputs de usuario
 movement :: IO ()
 movement = do
-    putStrLn "Ingrese una accion de movimiento (entre comillas):"
+    putStrLn "Ingrese una accion de movimiento:"
     input <- getLine
     let mov = read input :: String
     putStrLn $ "Su movimiento es: " ++ show mov
