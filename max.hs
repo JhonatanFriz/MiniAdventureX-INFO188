@@ -151,7 +151,7 @@ main = do
         
         --let tablero3 = elemento tablero2 x y n l o
 
-        let limit = randomLimit n s
+        let limit = randomWallsLimit n s
         --let tablero3 = createWalls tablero2 n s limit
         --showMatrix tablero3
         --putStrLn "Tablero con lava:"
@@ -257,7 +257,7 @@ randomLength n s =
 
 randomLavaLength :: Int -> Int -> Int
 randomLavaLength n s =
-    let (l, _) = randomR (2,7) (mkStdGen s)
+    let (l, _) = randomR (2,5) (mkStdGen s)
     in l
 
 randomLava :: Int -> Int
@@ -275,8 +275,13 @@ randomOrientation s =
     let (o, _) = randomR (0,1) (mkStdGen s)
     in (o == (1 :: Int))
 
-randomLimit :: Int -> Int -> Int
-randomLimit n s =
+randomLavaLimit :: Int -> Int -> Int
+randomLavaLimit n s =
+    let (limit, _) = randomR (2,5) (mkStdGen s)
+    in limit
+
+randomWallsLimit :: Int -> Int -> Int
+randomWallsLimit n s =
     let (limit, _) = randomR (3,n-3) (mkStdGen s)
     in limit
 
@@ -367,8 +372,8 @@ generateBoard n s p t = do
     let board = createTab n
     let board' = ubicarJugador p board
     let board'' = ubicarTesoro t board'
-    let lavaLimit = randomLavaLength n (s+444)
+    let lavaLimit = 4 --randomLavaLength n (s+444)
     let board''' = createLavaPools board'' n (s+32) lavaLimit
-    let wallsLimit = randomLength n (s+445)
+    let wallsLimit = randomWallsLimit n (s+445)
     let board'''' = createWalls board''' n s wallsLimit
     board''''
