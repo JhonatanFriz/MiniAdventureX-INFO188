@@ -172,10 +172,10 @@ main = do
 
         --printBoard tablero4
 
-        game tablero4 coordinatePlayer coordinateTreasure
+        game tablero4 (s+21) coordinatePlayer coordinateTreasure
 
-game :: [String] -> (Int, Int) -> (Int, Int) -> IO ()
-game board p t = do
+game :: [String] -> Int -> (Int, Int) -> (Int, Int) -> IO ()
+game board s p t = do
     putStrLn "Ingrese una acción de movimiento:"
     hFlush stdout
     input <- getLine
@@ -183,25 +183,31 @@ game board p t = do
     let mov = head input
     putStrLn $ "Su movimiento es: " ++ show mov
     putStrLn $ "Lo que paso es: " ++ checkInput mov
-    let p' = move board p mov
-    let cell = (board !! fst p') !! snd p'
-    putStrLn ("cell: " ++ show cell)
-    if cell == ' ' || cell == '$' || cell == 'X'
+    if mov == 'R'
         then do
-            let board' = replaceStringAtIndex (fst p) (snd p) ' ' board
-            let board'' = replaceStringAtIndex (fst p') (snd p') '@' board'
-            showMatrix board''
-            if cell == ' '
-                then do
-                    game board'' p' t
-                else if cell == '$'
-                    then do
-                        putStrLn "Game Over"
-                    else do
-                        putStrLn "Wiii"
+            let newBoard = generateBoard (length board) (s+253) p t
+            showMatrix newBoard
+            game newBoard (s+65) p t
         else do
-            showMatrix board
-            game board p t
+        let p' = move board p mov
+        let cell = (board !! fst p') !! snd p'
+        putStrLn ("cell: " ++ show cell)
+        if cell == ' ' || cell == '$' || cell == 'X'
+            then do
+                let board' = replaceStringAtIndex (fst p) (snd p) ' ' board
+                let board'' = replaceStringAtIndex (fst p') (snd p') '@' board'
+                showMatrix board''
+                if cell == ' '
+                    then do
+                        game board'' (s+66) p' t
+                    else if cell == '$'
+                        then do
+                            putStrLn "Game Over"
+                        else do
+                            putStrLn "Wiii"
+            else do
+                showMatrix board
+                game board (s+47) p t
 
 move :: [String] -> (Int, Int) -> Char -> (Int, Int)
 move board p mov
@@ -323,7 +329,11 @@ createLavaPool board x y1 y2 n s limit =
             let y1' = y1 + randomLava (s+11)
             let y2' = y2 + randomLava (s+12)
             let board' = createLavaRow board x y1 y2 n s
-            createLavaPool board' (x+1) y1' y2' n (s+80) (limit-1)
+            if y1' < 0
+                then do
+                    createLavaPool board' (x+1) 0 y2' n (s+80) (limit-1)
+                else do
+                    createLavaPool board' (x+1) y1' y2' n (s+80) (limit-1)
         else board
 
 createLavaRow :: [String] -> Int -> Int -> Int -> Int -> Int -> [String]
@@ -345,3 +355,14 @@ generateLava board x y1 y2 n =
             let board' = replaceStringAtIndex x y1 '$' board
             generateLava board' x (y1+1) y2 n
     else board
+
+generateBoard :: Int -> Int -> (Int, Int) -> (Int, Int) -> [String]
+generateBoard n s p t = do
+    let board = createTab n
+    let board' = ubicarJugador p board
+    let board'' = ubicarTesoro t board'
+    let lavaLimit = randomLavaLength n (s+444)
+    let board''' = createLavaPools board'' n (s+32) lavaLimit
+    let wallsLimit = randomLength n (s+445)
+    let board'''' = createWalls board''' n s wallsLimit
+    board''''
