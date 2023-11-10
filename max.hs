@@ -31,12 +31,13 @@ main = do
         let tablero1 = placePlayer coordinatePlayer tablero
         let tablero2 = placeTreasure coordinateTreasure tablero1
 
-        let limit = randomWallsLimit n s
+        
         putStrLn "Tablero con lava:"
         let tablero3 = createLavaPools tablero2 n (s+32) 5
         showMatrix tablero3
         putStrLn "Tablero con lava y murallas:"
-        let tablero4 = createWalls tablero3 n s limit
+        let numberOfWalls = randomNumberOfWalls n s
+        let tablero4 = createWalls tablero3 n s numberOfWalls
         showMatrix tablero4
 
         game tablero4 (s+21) coordinatePlayer coordinateTreasure
