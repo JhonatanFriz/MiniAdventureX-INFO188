@@ -1,13 +1,13 @@
 module Functions (
+    Coordinate(..),
+    newSeed,
     createBoard,
     replaceStringAtIndex,
     replaceCharAtIndex,
     placePlayer,
     placeTreasure,
-    randomCoordinate,
-    showMatrix,
     printBoard,
-    game,
+    nextTurn,
     generateBoard,
     move,
     createLavaPools,
@@ -27,6 +27,11 @@ where
 
 import System.Random
 import System.IO
+
+data Coordinate = Coordinate {x :: Int, y :: Int} deriving (Show)
+
+newSeed :: Int -> Int
+newSeed s = s+1
 
 -- Crea una lista de n listas de tamaño n, donde cada elemento es un espacio en blanco
 createBoard :: Int -> [String]
@@ -51,24 +56,11 @@ replaceCharAtIndex index newChar str
     | otherwise = Just $ take index str ++ [newChar] ++ drop (index + 1) str
 
 -- Funciones para establecer la posición del jugador y del tesoro
-placePlayer :: (Int, Int) -> [String] -> [String]
-placePlayer (x, y) t = replaceStringAtIndex x y '@' t
+placePlayer :: Coordinate -> [String] -> [String]
+placePlayer c t = replaceStringAtIndex (x c) (y c) '@' t
 
-placeTreasure :: (Int, Int) -> [String] -> [String]
-placeTreasure (x, y) t = replaceStringAtIndex x y 'X' t
-
--- Genera una coordenada random (x, y)
-randomCoordinate :: Int -> IO (Int, Int)
-randomCoordinate n = do
-    let m = n - 1
-    x <- randomRIO (0, m)
-    y <- randomRIO (0, m)
-    return (x, y)
-
--- Imprime el tablero en la terminal
-showMatrix :: [[Char]] -> IO ()
-showMatrix matrix = do
-    mapM_ (putStrLn . concatMap (\cell -> "[" ++ [cell]++ "]")) matrix
+placeTreasure :: Coordinate -> [String] -> [String]
+placeTreasure c t = replaceStringAtIndex (x c) (y c) 'X' t
 
 -- Imprime el tablero en la terminal
 printBoard :: [String] -> IO ()
@@ -79,8 +71,8 @@ printBoard board = do
   putStrLn ("╚" ++ replicate (width*2+1) '═'  ++ "╝")
 
 -- Función principal del juego que recibe una acción y realiza lo que corresponda
-game :: [String] -> Int -> (Int, Int) -> (Int, Int) -> IO ()
-game board s p t = do
+nextTurn :: [String] -> Int -> Coordinate -> Coordinate -> IO ()
+nextTurn board s p t = do
     let n = length board
     -- Recibe la acción del jugador
     putStrLn "Ingrese una acción de movimiento:"
@@ -93,25 +85,25 @@ game board s p t = do
     if mov == 'R'
         then do
             let newBoard = generateBoard n (s+253) p t
-            showMatrix newBoard
-            game newBoard (s+65) p t
+            printBoard newBoard
+            nextTurn newBoard (s+65) p t
         else do
         let p' = move p mov
         -- Si la posición siguiente del jugador está dentro del tablero
-        if fst p' < n && snd p' < n && fst p' >= 0 && snd p' >= 0
+        if (x p') < n && (y p') < n && (x p') >= 0 && (y p') >= 0
             then do
-            let cell = (board !! fst p') !! snd p'
+            let cell = (board !! (x p')) !! (y p')
             -- Si la casilla a la que se moverá el jugador es caminable, hay lava o está el tesoro
             if cell == ' ' || cell == '$' || cell == 'X'
                 then do
                     -- Actualiza el tablero y se imprime en la terminal
-                    let board' = uncurry replaceStringAtIndex p ' ' board
-                    let board'' = uncurry replaceStringAtIndex p' '@' board'
-                    showMatrix board''
+                    let board' = replaceStringAtIndex (x p) (y p) ' ' board
+                    let board'' = replaceStringAtIndex (x p') (y p') '@' board'
+                    printBoard board''
                     -- Si la casilla es caminable continúa al siguiente turno
                     if cell == ' '
                         then do
-                            game board'' (s+66) p' t
+                            nextTurn board'' (s+66) p' t
                         -- Si no, se termina el juego imprimiendo lo que corresponde
                         else if cell == '$'
                             then do
@@ -119,11 +111,11 @@ game board s p t = do
                             else do
                                 putStrLn "You Win!"
                 else do
-                    showMatrix board
-                    game board (s+47) p t
+                    printBoard board
+                    nextTurn board (s+47) p t
             else do
-                showMatrix board
-                game board (s+52) p t
+                printBoard board
+                nextTurn board (s+52) p t
 
 -- Imprime en la terminal la acción recibida
 checkInput :: Char -> String
@@ -136,28 +128,31 @@ checkInput n
     | otherwise = "Use W, A, S, D o R."
 
 -- Genera el tablero
-generateBoard :: Int -> Int -> (Int, Int) -> (Int, Int) -> [String]
+generateBoard :: Int -> Int -> Coordinate -> Coordinate -> [String]
 generateBoard n s p t = do
     let board = createBoard n
     let board' = placePlayer p board
     let board'' = placeTreasure t board'
-    let numberOfPools = 5 --randomNumberOfPools n (s+444)
-    let board''' = createLavaPools board'' n (s+32) numberOfPools
+    let numberOfPools = randomNumberOfPools n (s+444)
+    let board''' = createLavaPools board'' (s+32) numberOfPools
     let numberOfWalls = randomNumberOfWalls n (s+445)
-    let board'''' = createWalls board''' n s numberOfWalls
+    let board'''' = createWalls board''' s numberOfWalls
     board''''
 
 -- Genera la cantidad de piscinas de lava que recibe como parámetro
-createLavaPools :: [String] -> Int -> Int -> Int -> [String]
-createLavaPools board n s limit =
+createLavaPools :: [String] -> Int -> Int -> [String]
+createLavaPools board s limit =
     if limit > 0
         then do
-            let (x, y1) = randomCoordinateWithSeedAndLimit n (s+99)
+            let n = length board
+            let c = randomCoordinateWithSeedAndLimit n (s+99)
+            let x1 = x c
+            let y1 = y c
             let firstRowLength = randomFirstRowLength (s+21)
             let y2 = y1 + firstRowLength
             let poolLength = firstRowLength --rowLength*2
-            let board' = createLavaPool board x y1 y2 n (s+50) poolLength
-            createLavaPools board' n (s+13) (limit-1)
+            let board' = createLavaPool board x1 y1 y2 n (s+50) poolLength
+            createLavaPools board' (s+13) (limit-1)
         else board
 
 -- Genera una piscina de lava
@@ -186,24 +181,25 @@ createLavaRow board x y1 y2 n =
     else board
 
 -- Retorna la coordenada a la que se moverá el jugador
-move :: (Int, Int) -> Char -> (Int, Int)
+move :: Coordinate -> Char -> Coordinate
 move p mov
-    | mov == 'W' = (fst p - 1, snd p)
-    | mov == 'A' = (fst p, snd p - 1)
-    | mov == 'S' = (fst p + 1, snd p)
-    | mov == 'D' = (fst p, snd p + 1)
+    | mov == 'W' = Coordinate (x p - 1) (y p) --(fst p - 1, snd p)
+    | mov == 'A' = Coordinate (x p) (y p - 1) --(fst p, snd p - 1)
+    | mov == 'S' = Coordinate (x p + 1) (y p) --(fst p + 1, snd p)
+    | mov == 'D' = Coordinate (x p) (y p + 1) --(fst p, snd p + 1)
     | otherwise = p
 
 -- Genera la cantidad de murallas que recibe como parámetro
-createWalls :: [String] -> Int -> Int -> Int -> [String]
-createWalls board n s limit =
+createWalls :: [String] -> Int -> Int -> [String]
+createWalls board s limit =
     if limit > 0
         then do
-            let (x, y) = randomCoordinateWithSeedAndLimit n (s+2)
+            let n = length board
+            let c = randomCoordinateWithSeedAndLimit n (s+2)
             let l = randomWallLength n (s+3)
             let o = randomOrientation (s+4)
-            let board' = createWall board x y n l o
-            createWalls board' n (s+30) (limit-1)
+            let board' = createWall board (x c) (y c) n l o
+            createWalls board' (s+30) (limit-1)
         else board
 
 -- Función recursiva que genera un muro de longitud l, a partir de las coordenadas x e y
@@ -218,14 +214,14 @@ createWall board x y n l isVertical =
     else board
 
 -- Retorna una coordenada aleatoria (fila, columna) para un tablero de n*n a partir de una semilla s
-randomCoordinateWithSeedAndLimit :: Int -> Int -> (Int, Int)
+randomCoordinateWithSeedAndLimit :: Int -> Int -> Coordinate
 randomCoordinateWithSeedAndLimit n s = let
     gen = mkStdGen s
     m = n - 1
     (_, newGen) = split gen
     (x, gen') = randomR (0, m) newGen
     (y, gen'') = randomR (0, m) gen'
-    in (x, y)
+    in (Coordinate x y)
 
 -- Retorna un número aleatorio que determina el largo de una muralla
 randomWallLength :: Int -> Int -> Int
