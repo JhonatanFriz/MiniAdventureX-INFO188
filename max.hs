@@ -19,10 +19,10 @@ main = do
         --putStrLn ("n = " ++ show n ++ ", s = " ++ show s)
         
         let playerCoordinate = randomCoordinateWithSeedAndLimit n s
-        let treasureCoordinate = randomCoordinateWithSeedAndLimit n (s+1)
+        let treasureCoordinate = randomCoordinateWithSeedAndLimit n (newSeed s)
         -- let treasureCoordinate' = whileCoordinatesDiffer playerCoordinate treasureCoordinate n s
 
-        let board = generateBoard n (s+2) playerCoordinate treasureCoordinate
+        let board = generateBoard n (newSeed (newSeed s)) playerCoordinate treasureCoordinate
         printBoard board
 
         nextTurn board (s+3) playerCoordinate treasureCoordinate

@@ -141,43 +141,43 @@ generateBoard n s p t = do
 
 -- Genera la cantidad de piscinas de lava que recibe como parámetro
 createLavaPools :: [String] -> Int -> Int -> [String]
-createLavaPools board s limit =
-    if limit > 0
-        then do
-            let n = length board
-            let c = randomCoordinateWithSeedAndLimit n (s+99)
-            let x1 = x c
-            let y1 = y c
-            let firstRowLength = randomFirstRowLength (s+21)
-            let y2 = y1 + firstRowLength
-            let poolLength = firstRowLength --rowLength*2
-            let board' = createLavaPool board x1 y1 y2 n (s+50) poolLength
-            createLavaPools board' (s+13) (limit-1)
-        else board
+createLavaPools board s remainingPools
+    | remainingPools > 0 = do
+        let n = length board
+        let c = randomCoordinateWithSeedAndLimit n (s+99)
+        let x1 = x c
+        let y1 = y c
+        let firstRowLength = randomFirstRowLength (s+21)
+        let y2 = y1 + firstRowLength
+        let poolLength = firstRowLength --rowLength*2
+        let board' = createLavaPool board x1 y1 y2 n (s+50) poolLength
+        createLavaPools board' (s+13) (remainingPools-1)
+    | otherwise = board
 
 -- Genera una piscina de lava
 createLavaPool :: [String] -> Int -> Int -> Int -> Int -> Int -> Int -> [String]
-createLavaPool board x y1 y2 n s limit =
-    if limit > 0 && y1 <= y2
+createLavaPool board x y1 y2 n s remainingRows =
+    if remainingRows > 0 && y1 < y2
         then do
             let y1' = y1 + randomLava (s+11)
             let y2' = y2 + randomLava (s+12)
-            let board' = createLavaRow board x y1 y2 n
+            let board' = createLavaRow board x y1 y2
             -- Si la fila empieza antes de la posición 0
             if y1' < 0
                 then do
-                    createLavaPool board' (x+1) 0 y2' n (s+80) (limit-1)
+                    createLavaPool board' (x+1) 0 y2' n (s+80) (remainingRows-1)
                 else do
-                    createLavaPool board' (x+1) y1' y2' n (s+80) (limit-1)
+                    createLavaPool board' (x+1) y1' y2' n (s+80) (remainingRows-1)
         else board
 
 -- Genera una fila de una piscina de lava
-createLavaRow :: [String] -> Int -> Int -> Int -> Int -> [String]
-createLavaRow board x y1 y2 n =
-    if x < n && y1 < n && y1 < y2 && (board !! x) !! y1 == ' '
+createLavaRow :: [String] -> Int -> Int -> Int -> [String]
+createLavaRow board x y1 y2 = do
+    let n = length board
+    if x < n && y1 < n && y1 <= y2 && (board !! x) !! y1 == ' '
         then do
             let board' = replaceStringAtIndex x y1 '$' board
-            createLavaRow board' x (y1+1) y2 n
+            createLavaRow board' x (y1+1) y2
     else board
 
 -- Retorna la coordenada a la que se moverá el jugador
