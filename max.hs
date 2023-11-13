@@ -16,11 +16,9 @@ main = do
     else do
         let n = read (head args) :: Int
             s = read (args !! 1) :: Int
-        --putStrLn ("n = " ++ show n ++ ", s = " ++ show s)
         
         let playerCoordinate = getRandomCoordinate n s
         let treasureCoordinate = getRandomCoordinate n (s+1)
-        -- let treasureCoordinate' = whileCoordinatesDiffer playerCoordinate treasureCoordinate n s
 
         let board = generateBoard n (s+2) playerCoordinate treasureCoordinate
         printBoard board

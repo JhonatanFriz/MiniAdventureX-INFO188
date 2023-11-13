@@ -76,16 +76,15 @@ nextTurn board s p t = do
     input <- getLine
     if input == ("") -- if null input
         then do
-            putStrLn $ "Error. No se ingresó una acción."
+            putStrLn $ "Error. Use W, A, S, D o R."
             nextTurn board s p t
     else do
         let action = head input
-        putStrLn $ "Su movimiento es: " ++ show action
-        putStrLn $ "Lo que paso es: " ++ checkInput action
         -- Si el jugador elige regenerar el tablero
         if action == 'R'
             then do
                 let newBoard = generateBoard n (s+253) p t
+                putStrLn "El mapa ha sido regenerado."
                 printBoard newBoard
                 nextTurn newBoard (s+65) p t
             else do
@@ -117,16 +116,6 @@ nextTurn board s p t = do
                 else do
                     printBoard board
                     nextTurn board (s+52) p t
-
--- Imprime en la terminal la acción recibida
-checkInput :: Char -> String
-checkInput n
-    | n == 'W' = "Movido hacia arriba."
-    | n == 'A' = "Movido hacia la izquierda."
-    | n == 'S' = "Movido hacia abajo."
-    | n == 'D' = "Movido hacia la derecha."
-    | n == 'R' = "El mapa ha sido regenerado."
-    | otherwise = "Use W, A, S, D o R."
 
 -- Genera el tablero
 generateBoard :: Int -> Int -> Coordinate -> Coordinate -> [String]
